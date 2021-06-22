@@ -1,4 +1,4 @@
-bokeh==0.12.15
+bokeh==2.3.2
 Jinja2==2.10
 MarkupSafe==1.1.1
 numpy==1.20.2
