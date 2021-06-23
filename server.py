@@ -8,7 +8,6 @@ from scipy.signal import freqz
 import numpy as np
 from scipy.signal import zpk2ss, ss2zpk, tf2zpk, zpk2tf
 from cmath import *
-
 # prepare the graph figures
 system = figure(plot_width=400, plot_height=400, match_aspect=True,x_range=(-2,2), y_range=(-2, 2), tools='save', margin=10,
 title="Zeros and Poles Control System", toolbar_location="above")
@@ -33,6 +32,18 @@ filter.line((0, 1), (0, 0),color='blue')
 filter.line((0, -1), (0, 0),color='blue')
 filter.line((0, 0), (0, 1),color='blue')
 filter.line((0, 0), (0, -1),color='blue')
+####### magnitude ######
+magnitude_source= ColumnDataSource({
+    'h':[], 'm':[]
+})
+
+magnitude.line(x='h',y='m',source=magnitude_source,color='springgreen',width=3)
+
+phase_source= ColumnDataSource({
+    'w':[], 'p':[]
+})
+
+phase.line(x='w',y='p',source=phase_source, color='springgreen',width=3)
 
 ######## conjugate_zeros ######
 conjugate_zeros = ColumnDataSource(data=dict(x_of_zeros_conjugate=[], y_of_zeros_conjugate=[]))
@@ -102,8 +113,6 @@ relative_zeros_columns = [TableColumn(field="x_of_zeros_relative", title="x_of_z
            ]
 relative_zeros_table = DataTable(source=relative_zeros, columns=relative_zeros_columns, editable=True, height=200)
 
-
-
 ######## relative_poles ######
 relative_poles = ColumnDataSource(data=dict(x_of_poles_relative=[], y_of_poles_relative=[]))
 
@@ -113,13 +122,12 @@ relative_poles_columns = [TableColumn(field="x_of_poles_relative", title="x_of_p
            ]
 relative_poles_table = DataTable(source=relative_poles, columns=relative_poles_columns, editable=True, height=200)
 
-###### Phase ##########
+###### Phase filter ##########
 phase_filter_source= ColumnDataSource({
     'x':[], 'y':[]
 })
 
 phase_filter.line(x='x',y='y',source=phase_filter_source, color='springgreen',width=3)
-
 
 
 # choose to add zero or pole in the filter
@@ -206,9 +214,38 @@ def reset_filter():
     # clear all zeros and poles
     zeros_filter_source.data = {k: [] for k in zeros_filter_source.data}
     poles_filter_source.data = {k: [] for k in poles_filter_source.data}
-    # Zero_filter.clear()
-    # Pole_filter.clear()
 reset_button_filter.on_click(reset_filter)
+
+
+
+menu = [("Filter 1", "filter_1"), ("Filter 2", "filter_2"), ("Filter 3", "filter_3"), ("Filter 4", "filter_4")]
+
+dropdown = Dropdown(label="Filters", button_type="success", menu=menu)
+dropdown.js_on_event("menu_item_click", CustomJS(code="console.log('dropdown: ' + this.item, this.toString())"))
+
+def dropdown_filter( new):
+    reset_filter()
+    if new.item== "filter_1":
+        k=[-0.7,0.2]
+        p=[0.3,0.7]
+        zeros_filter_source.stream({'x_of_zeros_filter': k, 'y_of_zeros_filter': p})
+
+    elif new.item== "filter_2":
+        k=[1.4,0.9]
+        p=[0.7,0.2]
+        zeros_filter_source.stream({'x_of_zeros_filter': k, 'y_of_zeros_filter': p})
+    
+    elif new.item== "filter_3":
+        k=[-1.2,-0.6]
+        p=[0.1,0.2]
+        poles_filter_source.stream({'x_of_poles_filter': k, 'y_of_poles_filter': p})
+    elif new.item== "filter_4":
+        k=[-0.5,0.9]
+        p=[0.1,0.4]
+        poles_filter_source.stream({'x_of_poles_filter': k, 'y_of_poles_filter': p})
+
+dropdown.on_click(dropdown_filter)
+
 
 
 zeros_filter_source.on_change('data',update_filter)
@@ -291,18 +328,7 @@ def clear_poles():
     poles_source.data = {k: [] for k in poles_source.data}
 clear_poles_button.on_click(clear_poles)
 
-####### magnitude ######
-magnitude_source= ColumnDataSource({
-    'h':[], 'm':[]
-})
 
-magnitude.line(x='h',y='m',source=magnitude_source,color='springgreen',width=3)
-
-phase_source= ColumnDataSource({
-    'w':[], 'p':[]
-})
-
-phase.line(x='w',y='p',source=phase_source, color='springgreen',width=3)
 
 def update(attr, old, new):
     global Zero,Pole  
@@ -369,9 +395,8 @@ zeros_source.on_change('data',update)
 poles_source.on_change('data',update)
 
 # layout
-plot=Row(zeros_table,poles_table)
 radio_button_group=Row(reset_button,clear_zeros_button,clear_poles_button)
 first_column= column(system,radio_group,radio_button_group,checkbox_group,filter,radio_group_filter,reset_button_filter)
-second_column=column(magnitude,phase ,phase_filter )
+second_column=column(magnitude,phase ,dropdown,phase_filter )
 curdoc().theme = 'dark_minimal'
-curdoc().add_root(Row(first_column,second_column,plot,background='darkgrey'))
+curdoc().add_root(Row(first_column,second_column,background='darkgrey'))
