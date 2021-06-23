@@ -207,7 +207,7 @@ def filter_phase():
 
 ######## Clear Buttons filter ########
 
-reset_button_filter = Button(label="Reset",  button_type="success", width=140,margin=0)
+reset_button_filter = Button(label="Reset Filter",  button_type="danger", width=300,margin=0)
 reset_button_filter.js_on_click(CustomJS(code="console.log('button: click!', this.toString())"))
 
 def reset_filter():
@@ -302,13 +302,13 @@ checkbox_group.on_click(conjugate)
 
 ######## Clear Buttons ########
 
-reset_button = Button(label="Reset",  button_type="success", width=140,margin=0)
+reset_button = Button(label="Reset",  button_type="danger", width=140,margin=0)
 reset_button.js_on_click(CustomJS(code="console.log('button: click!', this.toString())"))
 
-clear_zeros_button = Button(label="Clear Zeros", button_type="success",width=140,margin=0)
+clear_zeros_button = Button(label="Clear Zeros", button_type="primary",width=140,margin=0)
 clear_zeros_button.js_on_click(CustomJS(code="console.log('button: click!', this.toString())"))
 
-clear_poles_button = Button(label="Clear Poles", button_type="success",width=140,margin=0)
+clear_poles_button = Button(label="Clear Poles", button_type="primary",width=140,margin=0)
 clear_poles_button.js_on_click(CustomJS(code="console.log('button: click!', this.toString())"))
 
 def reset():
