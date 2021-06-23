@@ -9,18 +9,19 @@ import numpy as np
 from scipy.signal import zpk2ss, ss2zpk, tf2zpk, zpk2tf
 from cmath import *
 # prepare the graph figures
-system = figure(plot_width=400, plot_height=400, match_aspect=True,x_range=(-2,2), y_range=(-2, 2), tools='save', margin=10,
+system = figure(plot_width=340, plot_height=350,match_aspect=True, x_range=(-2,2), y_range=(-2, 2), tools='save',margin=10,
 title="Zeros and Poles Control System", toolbar_location="above")
 magnitude= figure( tools=['save'],title='Magnitude',
-plot_width=500, plot_height=300 ,  margin=10, toolbar_location="above")
+plot_width=450, plot_height=250 ,  margin=10, toolbar_location="above")
 phase= figure( tools=['save'],title='Phase',
-plot_width=500, plot_height=300, margin=10, toolbar_location="above")
-filter = figure(plot_width=400, plot_height=400, match_aspect=True,x_range=(-2,2), y_range=(-2, 2), tools='save', margin=10,
+plot_width=450, plot_height=250, margin=10, toolbar_location="above")
+filter = figure(plot_width=340, plot_height=350, match_aspect=True,x_range=(-2,2), y_range=(-2, 2), tools='save', margin=10,
 title="Custom Filter", toolbar_location="above")
-phase_filter= figure( tools=['save'],title='Phase',
-plot_width=500, plot_height=300, margin=10, toolbar_location="above")
+phase_filter= figure( tools=['save'],title='Filter Phase',
+plot_width=450, plot_height=250, margin=0, toolbar_location="above")
 
 ####### Unit Circle #############
+
 system.circle(0, 0, radius=1.0, fill_alpha=0,color='blue')
 system.line((0, 1), (0, 0),color='blue')
 system.line((0, -1), (0, 0),color='blue')
@@ -48,18 +49,18 @@ phase.line(x='w',y='p',source=phase_source, color='springgreen',width=3)
 ######## conjugate_zeros ######
 conjugate_zeros = ColumnDataSource(data=dict(x_of_zeros_conjugate=[], y_of_zeros_conjugate=[]))
 
-conjugate_zeros_renderer = system.circle(x="x_of_zeros_conjugate", y="y_of_zeros_conjugate", source=conjugate_zeros,color='red', size=10)
+conjugate_zeros_renderer = system.circle(x="x_of_zeros_conjugate", y="y_of_zeros_conjugate",
+                                        source=conjugate_zeros,color='red', size=10,legend_label="Zero")
 conjugate_zeros_columns = [TableColumn(field="x_of_zeros_conjugate", title="x_of_zeros_conjugate"),
            TableColumn(field="y_of_zeros_conjugate", title="y_of_zeros_conjugate")
            ]
 conjugate_zeros_table = DataTable(source=conjugate_zeros, columns=conjugate_zeros_columns, editable=True, height=200)
 
-
-
 ######## conjugate_poles ######
 conjugate_poles = ColumnDataSource(data=dict(x_of_poles_conjugate=[], y_of_poles_conjugate=[]))
 
-conjugate_poles_renderer = system.x(x="x_of_poles_conjugate", y="y_of_poles_conjugate", source=conjugate_poles,line_width=3, color='yellow', size=15)
+conjugate_poles_renderer = system.x(x="x_of_poles_conjugate", y="y_of_poles_conjugate",
+                                    source=conjugate_poles,line_width=3, color='yellow', size=15,legend_label="Pole")
 conjugate_poles_columns = [TableColumn(field="x_of_poles_conjugate", title="x_of_poles_conjugate"),
            TableColumn(field="y_of_poles_conjugate", title="y_of_poles_conjugate")
            ]
@@ -83,6 +84,10 @@ zeros_columns = [TableColumn(field="x_of_zeros", title="x_of_zeros"),
            TableColumn(field="y_of_zeros", title="y_of_zeros")
            ]
 zeros_table = DataTable(source=zeros_source, columns=zeros_columns, editable=True, height=200)
+
+div = Div(text=""" To Delete any point click on it then press backspace""",
+width=200, height=100)
+
 
 ########## Filter ########## 
 
@@ -259,7 +264,7 @@ poles_filter_source.on_change('data',update_filter)
 # choose to add zero or pole in the Radiobutton
 LABELS = ["Zero", "Pole"]
 
-radio_group = RadioGroup(labels=LABELS, active=None, width=400)
+radio_group = RadioGroup(labels=LABELS, active=None, width=200)
 radio_group.js_on_click(CustomJS(code="""
     console.log('radio_group: active=' + this.active, this.toString())
 """))
@@ -302,13 +307,13 @@ checkbox_group.on_click(conjugate)
 
 ######## Clear Buttons ########
 
-reset_button = Button(label="Reset",  button_type="danger", width=140,margin=0)
+reset_button = Button(label="Reset",  button_type="danger", width=100,margin=0)
 reset_button.js_on_click(CustomJS(code="console.log('button: click!', this.toString())"))
 
-clear_zeros_button = Button(label="Clear Zeros", button_type="primary",width=140,margin=0)
+clear_zeros_button = Button(label="Clear Zeros", button_type="primary",width=100,margin=0)
 clear_zeros_button.js_on_click(CustomJS(code="console.log('button: click!', this.toString())"))
 
-clear_poles_button = Button(label="Clear Poles", button_type="primary",width=140,margin=0)
+clear_poles_button = Button(label="Clear Poles", button_type="primary",width=100,margin=0)
 clear_poles_button.js_on_click(CustomJS(code="console.log('button: click!', this.toString())"))
 
 def reset():
@@ -396,7 +401,9 @@ poles_source.on_change('data',update)
 
 # layout
 radio_button_group=Row(reset_button,clear_zeros_button,clear_poles_button)
-first_column= column(system,radio_group,radio_button_group,checkbox_group,filter,radio_group_filter,reset_button_filter)
-second_column=column(magnitude,phase ,dropdown,phase_filter )
+first_column= column(system,radio_group,radio_button_group,checkbox_group,div)
+second_column=column(magnitude,phase )
+third_column=column(filter,radio_group_filter,reset_button_filter,dropdown,phase_filter)
+
 curdoc().theme = 'dark_minimal'
-curdoc().add_root(Row(first_column,second_column,background='darkgrey'))
+curdoc().add_root(Row(first_column,second_column,third_column,background='darkgrey'))
