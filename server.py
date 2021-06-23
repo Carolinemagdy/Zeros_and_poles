@@ -10,11 +10,15 @@ from scipy.signal import zpk2ss, ss2zpk, tf2zpk, zpk2tf
 from cmath import *
 
 # prepare the graph figures
-system = figure(plot_width=400, plot_height=400, match_aspect=True, tools='save', margin=10,
+system = figure(plot_width=400, plot_height=400, match_aspect=True,x_range=(-2,2), y_range=(-2, 2), tools='save', margin=10,
 title="Zeros and Poles Control System", toolbar_location="above")
 magnitude= figure( tools=['save'],title='Magnitude',
 plot_width=500, plot_height=300 ,  margin=10, toolbar_location="above")
 phase= figure( tools=['save'],title='Phase',
+plot_width=500, plot_height=300, margin=10, toolbar_location="above")
+filter = figure(plot_width=400, plot_height=400, match_aspect=True,x_range=(-2,2), y_range=(-2, 2), tools='save', margin=10,
+title="Custom Filter", toolbar_location="above")
+phase_filter= figure( tools=['save'],title='Phase',
 plot_width=500, plot_height=300, margin=10, toolbar_location="above")
 
 ####### Unit Circle #############
@@ -24,7 +28,11 @@ system.line((0, -1), (0, 0),color='blue')
 system.line((0, 0), (0, 1),color='blue')
 system.line((0, 0), (0, -1),color='blue')
 
-
+filter.circle(0, 0, radius=1.0, fill_alpha=0,color='blue')
+filter.line((0, 1), (0, 0),color='blue')
+filter.line((0, -1), (0, 0),color='blue')
+filter.line((0, 0), (0, 1),color='blue')
+filter.line((0, 0), (0, -1),color='blue')
 
 ######## conjugate_zeros ######
 conjugate_zeros = ColumnDataSource(data=dict(x_of_zeros_conjugate=[], y_of_zeros_conjugate=[]))
@@ -64,6 +72,152 @@ zeros_columns = [TableColumn(field="x_of_zeros", title="x_of_zeros"),
            TableColumn(field="y_of_zeros", title="y_of_zeros")
            ]
 zeros_table = DataTable(source=zeros_source, columns=zeros_columns, editable=True, height=200)
+
+########## Filter ########## 
+
+######## Pole ######
+poles_filter_source = ColumnDataSource(data=dict(x_of_poles_filter=[], y_of_poles_filter=[]))
+
+poles_filter_renderer = filter.x(x="x_of_poles_filter", y="y_of_poles_filter", source=poles_filter_source,line_width=3, color='yellow', size=15)
+poles_filter_columns = [TableColumn(field="x_of_poles_filter", title="x_of_poles_filter"),
+           TableColumn(field="y_of_poles_filter", title="y_of_poles_filter")
+           ]
+poles_filter_table = DataTable(source=poles_filter_source, columns=poles_filter_columns, editable=True, height=200)
+
+########## Zero ########
+zeros_filter_source = ColumnDataSource(data=dict(x_of_zeros_filter=[], y_of_zeros_filter=[]))
+
+zeros_filter_render = filter.circle(x='x_of_zeros_filter', y='y_of_zeros_filter', source=zeros_filter_source, color='red', size=10)
+zeros_filter_columns = [TableColumn(field="x_of_zeros_filter", title="x_of_zeros_filter"),
+           TableColumn(field="y_of_zeros_filter", title="y_of_zeros_filter")
+           ]
+zeros_filter_table = DataTable(source=zeros_filter_source, columns=zeros_filter_columns, editable=True, height=200)
+
+######## relative_zeros ######
+relative_zeros = ColumnDataSource(data=dict(x_of_zeros_relative=[], y_of_zeros_relative=[]))
+
+relative_zeros_renderer = filter.circle(x="x_of_zeros_relative", y="y_of_zeros_relative", source=relative_zeros,color='red', size=10)
+relative_zeros_columns = [TableColumn(field="x_of_zeros_relative", title="x_of_zeros_relative"),
+           TableColumn(field="y_of_zeros_relative", title="y_of_zeros_relative")
+           ]
+relative_zeros_table = DataTable(source=relative_zeros, columns=relative_zeros_columns, editable=True, height=200)
+
+
+
+######## relative_poles ######
+relative_poles = ColumnDataSource(data=dict(x_of_poles_relative=[], y_of_poles_relative=[]))
+
+relative_poles_renderer = filter.x(x="x_of_poles_relative", y="y_of_poles_relative", source=relative_poles,line_width=3, color='yellow', size=15)
+relative_poles_columns = [TableColumn(field="x_of_poles_relative", title="x_of_poles_relative"),
+           TableColumn(field="y_of_poles_relative", title="y_of_poles_relative")
+           ]
+relative_poles_table = DataTable(source=relative_poles, columns=relative_poles_columns, editable=True, height=200)
+
+###### Phase ##########
+phase_filter_source= ColumnDataSource({
+    'x':[], 'y':[]
+})
+
+phase_filter.line(x='x',y='y',source=phase_filter_source, color='springgreen',width=3)
+
+
+
+# choose to add zero or pole in the filter
+LABELS = ["Zero", "Pole"]
+
+radio_group_filter = RadioGroup(labels=LABELS, active=None, width=400)
+radio_group_filter.js_on_click(CustomJS(code="""
+    console.log('radio_group_filter: active=' + this.active, this.toString())
+"""))
+
+# check whether pole or zero is activated
+def zero_or_pole_filter(new):
+    if new == 0:
+        draw_tool1 = PointDrawTool(renderers=[zeros_filter_render], empty_value='red')
+    else:
+        draw_tool1 = PointDrawTool(renderers=[poles_filter_renderer], empty_value='yellow')
+    filter.add_tools(draw_tool1)
+    filter.toolbar.active_tap = draw_tool1
+
+radio_group_filter.on_click(zero_or_pole_filter)
+
+######### Update filter data ######
+
+Zero = []
+Pole = []
+Zero_filter = []
+Pole_filter = []
+
+def update_filter(attr, old, new):
+    global Zero_filter,Pole_filter,Zero,Pole
+    new_x_of_zeros=[]
+    new_y_of_zeros=[]
+    new_x_of_poles=[]
+    new_y_of_poles=[]    
+    Zero_filter = []
+    Pole_filter = []
+
+    for i in range(len(zeros_filter_source.data['x_of_zeros_filter'])):
+        Zero_filter.append(zeros_filter_source.data['x_of_zeros_filter'][i]+zeros_filter_source.data['y_of_zeros_filter'][i]*1j)
+        den= ((zeros_filter_source.data['x_of_zeros_filter'][i])**2)+((zeros_filter_source.data['y_of_zeros_filter'][i])**2)
+        Pole_filter.append(((zeros_filter_source.data['x_of_zeros_filter'][i])/den)+ ((zeros_filter_source.data['y_of_zeros_filter'][i])/den)*1j)
+        new_x_of_poles.append((zeros_filter_source.data['x_of_zeros_filter'][i])/den)
+        new_y_of_poles.append((zeros_filter_source.data['y_of_zeros_filter'][i])/den)
+
+    relative_poles.data = dict(x_of_poles_relative=new_x_of_poles, y_of_poles_relative=new_y_of_poles)
+    relative_poles_renderer = filter.x(x="x_of_poles_relative", y="y_of_poles_relative", source=relative_poles,line_width=3, color='yellow', size=15)
+    relative_poles_renderer1 = system.x(x="x_of_poles_relative", y="y_of_poles_relative", source=relative_poles,line_width=3, color='yellow', size=15)
+    zeros_renderer2 = system.circle(x="x_of_zeros_filter", y="y_of_zeros_filter", source=zeros_filter_source,color='red', size=10)
+
+    
+    for i in range(len(poles_filter_source.data['x_of_poles_filter'])):
+        Pole_filter.append(poles_filter_source.data['x_of_poles_filter'][i]+poles_filter_source.data['y_of_poles_filter'][i]*1j)
+        den= ((poles_filter_source.data['x_of_poles_filter'][i])**2)+((poles_filter_source.data['y_of_poles_filter'][i])**2)
+        Zero_filter.append(((poles_filter_source.data['x_of_poles_filter'][i])/den)+ ((poles_filter_source.data['y_of_poles_filter'][i])/den)*1j)
+        new_x_of_zeros.append((poles_filter_source.data['x_of_poles_filter'][i])/den)
+        new_y_of_zeros.append((poles_filter_source.data['y_of_poles_filter'][i])/den)
+
+    relative_zeros.data = dict(x_of_zeros_relative=new_x_of_zeros, y_of_zeros_relative=new_y_of_zeros)
+    relative_zeros_renderer3 = filter.circle(x="x_of_zeros_relative", y="y_of_zeros_relative", source=relative_zeros,color='red', size=10)     
+    poles_renderer4 = system.x(x="x_of_poles_filter", y="y_of_poles_filter", source=poles_filter_source,line_width=3, color='yellow', size=15)
+    relative_zeros_renderer5 = system.circle(x="x_of_zeros_relative", y="y_of_zeros_relative", source=relative_zeros,color='red', size=10)     
+
+    filter_phase()
+    magnitude_phase()
+    
+def filter_phase():
+    phase_filter_source.data={
+    'x':[], 'y':[]
+    }
+    num, den=zpk2tf(Zero_filter,Pole_filter,1)
+    w,h=freqz(num,den,worN=10000)
+    phase=np.arctan(h.imag/h.real)
+    phase_filter_source.stream({
+        'x':w, 'y':phase
+    })
+
+
+######## Clear Buttons filter ########
+
+reset_button_filter = Button(label="Reset",  button_type="success", width=140,margin=0)
+reset_button_filter.js_on_click(CustomJS(code="console.log('button: click!', this.toString())"))
+
+def reset_filter():
+    # clear all zeros and poles
+    zeros_filter_source.data = {k: [] for k in zeros_filter_source.data}
+    poles_filter_source.data = {k: [] for k in poles_filter_source.data}
+    # Zero_filter.clear()
+    # Pole_filter.clear()
+reset_button_filter.on_click(reset_filter)
+
+
+zeros_filter_source.on_change('data',update_filter)
+poles_filter_source.on_change('data',update_filter)
+
+################# End of filters #############
+
+
+
 
 # choose to add zero or pole in the Radiobutton
 LABELS = ["Zero", "Pole"]
@@ -150,9 +304,8 @@ phase_source= ColumnDataSource({
 
 phase.line(x='w',y='p',source=phase_source, color='springgreen',width=3)
 
-
 def update(attr, old, new):
-    global Zero,Pole
+    global Zero,Pole  
     Zero = []
     Pole = []
     new_x_of_zeros =[]
@@ -192,13 +345,20 @@ def magnitude_phase():
     magnitude_source.data={
     'h': [], 'm': []
     }
-   
-    num, den=zpk2tf(Zero,Pole,1)
+    Zero_plot=[]
+    Pole_plot=[]
+    Zero_plot.extend(Zero)
+    Zero_plot.extend(Zero_filter)
+    Pole_plot.extend(Pole)
+    Pole_plot.extend(Pole_filter)
+    num, den=zpk2tf(Zero_plot,Pole_plot,1)
     w,h=freqz(num,den,worN=10000)
-    magnitude1=np.sqrt(h.real**2+h.imag**2)
+    num1, den1=zpk2tf(Zero,Pole,1)
+    w1,h1=freqz(num1,den1,worN=10000)
+    magnitude1=np.sqrt(h1.real**2+h1.imag**2)
     phase=np.arctan(h.imag/h.real)
     magnitude_source.stream({
-    'h': w, 'm': magnitude1
+    'h': w1, 'm': magnitude1
     })
     phase_source.stream({
         'w':w, 'p':phase
@@ -211,7 +371,7 @@ poles_source.on_change('data',update)
 # layout
 plot=Row(zeros_table,poles_table)
 radio_button_group=Row(reset_button,clear_zeros_button,clear_poles_button)
-first_column= column(system,radio_group,radio_button_group,background='darkgrey')
-second_column=column(magnitude,phase ,checkbox_group)
+first_column= column(system,radio_group,radio_button_group,checkbox_group,filter,radio_group_filter,reset_button_filter)
+second_column=column(magnitude,phase ,phase_filter )
 curdoc().theme = 'dark_minimal'
 curdoc().add_root(Row(first_column,second_column,plot,background='darkgrey'))
